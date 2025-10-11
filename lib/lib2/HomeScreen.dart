@@ -9,7 +9,7 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Bookly - Beranda'),
         backgroundColor: const Color(0xFF2E7D32),
-        automaticallyImplyLeading: false, // Hilangkan tombol back di home screen
+        automaticallyImplyLeading: false,
       ),
       body: Center(
         child: Padding(
@@ -30,13 +30,12 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 40),
 
-              // Tombol utama ke Katalog
+              // Tombol ke Katalog
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    // Navigasi ke CatalogScreen
                     Navigator.pushNamed(context, "/catalog");
                   },
                   icon: const Icon(Icons.book, color: Colors.white),
@@ -53,11 +52,33 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              
+
+              // Tombol Pembayaran Digital
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pushNamed(context, "/pembayaran");
+                  },
+                  icon: const Icon(Icons.payment, color: Colors.white),
+                  label: const Text(
+                    "Pembayaran Buku",
+                    style: TextStyle(fontSize: 18, color: Colors.white),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2E7D32),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
               // Tombol ke Profil
               TextButton.icon(
                 onPressed: () {
-                  // Navigasi ke ProfileScreen
                   Navigator.pushNamed(context, "/profile");
                 },
                 icon: const Icon(Icons.person),
