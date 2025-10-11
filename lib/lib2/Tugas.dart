@@ -22,7 +22,7 @@ class ProductGalleryApp extends StatelessWidget {
               padding: const EdgeInsets.all(8.0),
               child: Text('Jelajahi Kategori', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
-            SizedBox(
+            Container(
               height: 50, // Tinggi tetap untuk ListView horizontal
               child: ListView.builder(
                 // Mengubah arah gulir menjadi horizontal
