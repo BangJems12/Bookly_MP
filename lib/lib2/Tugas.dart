@@ -5,8 +5,6 @@ class ProductGalleryApp extends StatelessWidget {
   final List<String> categories = ['Terbaru', 'Populer', 'Diskon', 'Pakaian', 'Elektronik', 'Rumah'];
   final int totalProducts = 15;
 
-  const ProductGalleryApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
