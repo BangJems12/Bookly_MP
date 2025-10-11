@@ -1,6 +1,6 @@
 # Tugas Individu Pengembangan Applikasi Multiplatform
 
-Katalog : Raya Abiathar ( CatalogScreen )
-Pading : AMKA WILDAN FIRDAUS (  )
-Reservasi : Pascal Brahmantyo Hadiyanto ( BookDetailScreen )
-Pembayaran : Ryan Shava ( Pembayaran )
+1. Katalog : Raya Abiathar ( CatalogScreen )
+2. Pading : AMKA WILDAN FIRDAUS (  )
+3. Reservasi : Pascal Brahmantyo Hadiyanto ( BookDetailScreen )
+4. Pembayaran : Ryan Shava ( Pembayaran )
