@@ -6,6 +6,7 @@ import 'lib2/LupaPasswordScreen.dart';
 import 'lib2/ProfileScreen.dart'; 
 import 'lib2/CatalogScreen.dart';
 import 'lib2/Pembayaran.dart'; // <-- import Pembayaran
+import 'lib2/PeminjamanScreen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -32,6 +33,7 @@ class MyApp extends StatelessWidget {
         "/home": (context) => const HomeScreen(),
         "/catalog": (context) => const CatalogScreen(),
         "/pembayaran": (context) => const Pembayaran(), // <-- route pembayaran
+        "/peminjaman": (context) => const PeminjamanScreen(),
       },
     );
   }

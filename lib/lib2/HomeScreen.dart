@@ -76,6 +76,29 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
+              // Tombol Peminjaman Digital (BARU)
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pushNamed(context, "/peminjaman");
+                  },
+                  icon: const Icon(Icons.library_books, color: Colors.white),
+                  label: const Text(
+                    "Peminjaman Digital",
+                    style: TextStyle(fontSize: 18, color: Colors.white),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2E7D32),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
               // Tombol ke Profil
               TextButton.icon(
                 onPressed: () {
