@@ -5,6 +5,8 @@ class ProductGalleryApp extends StatelessWidget {
   final List<String> categories = ['Terbaru', 'Populer', 'Diskon', 'Pakaian', 'Elektronik', 'Rumah'];
   final int totalProducts = 15;
 
+  const ProductGalleryApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -22,7 +24,7 @@ class ProductGalleryApp extends StatelessWidget {
               padding: const EdgeInsets.all(8.0),
               child: Text('Jelajahi Kategori', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
-            Container(
+            SizedBox(
               height: 50, // Tinggi tetap untuk ListView horizontal
               child: ListView.builder(
                 // Mengubah arah gulir menjadi horizontal
