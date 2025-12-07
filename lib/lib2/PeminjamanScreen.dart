@@ -1,58 +1,131 @@
 import 'package:flutter/material.dart';
+import 'package:projekkuliahsemester5/lib2/HomeScreen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'Bank.dart'; // ✅ BankPage
+// ✅ pastikan kamu punya HomeScreen
 
-class PeminjamanScreen extends StatelessWidget {
+class PeminjamanScreen extends StatefulWidget {
   const PeminjamanScreen({super.key});
 
   @override
+  State<PeminjamanScreen> createState() => _PeminjamanScreenState();
+}
+
+class _PeminjamanScreenState extends State<PeminjamanScreen> {
+  List<Map<String, dynamic>> proses = [];
+  List<Map<String, dynamic>> aktif = [];
+  List<Map<String, dynamic>> berlangganan = [];
+  List<Map<String, dynamic>> history = [];
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+    try {
+      final supabase = Supabase.instance.client;
+      final user = supabase.auth.currentUser;
+
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Silakan login terlebih dahulu")),
+        );
+        return;
+      }
+
+      final prosesData = await supabase
+          .from('peminjaman')
+          .select('id, status, harga, books(judul, penulis)')
+          .eq('user_id', user.id)
+          .eq('status', 'Proses');
+
+      final aktifData = await supabase
+          .from('peminjaman')
+          .select('id, status, harga, books(judul, penulis)')
+          .eq('user_id', user.id)
+          .eq('status', 'Aktif');
+
+      final berlanggananData = await supabase
+          .from('peminjaman')
+          .select('id, status, harga, books(judul, penulis)')
+          .eq('user_id', user.id)
+          .eq('status', 'Berlangganan');
+
+      final historyData = await supabase
+          .from('peminjaman')
+          .select('id, status, harga, books(judul, penulis)')
+          .eq('user_id', user.id)
+          .eq('status', 'History');
+
+      setState(() {
+        proses = List<Map<String, dynamic>>.from(prosesData);
+        aktif = List<Map<String, dynamic>>.from(aktifData);
+        berlangganan = List<Map<String, dynamic>>.from(berlanggananData);
+        history = List<Map<String, dynamic>>.from(historyData);
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Gagal memuat data: $e")),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Data dummy buku yang sedang dipinjam dan riwayat
-    final peminjamanAktif = [
-      {'judul': 'Flutter UI Design', 'penulis': 'Flutter Dev', 'warna': Colors.green},
-      {'judul': 'Dart Programming', 'penulis': 'Google', 'warna': Colors.blueGrey},
-      {'judul': 'Web Development', 'penulis': 'Tim Berners-Lee', 'warna': Colors.blue},
-      {'judul': 'Mobile App Design', 'penulis': 'UI Expert', 'warna': Colors.orange},
-    ];
-
-    final riwayatPeminjaman = [
-      {'judul': 'Machine Learning', 'penulis': 'Andrew Ng', 'warna': Colors.purple},
-      {'judul': 'Database System', 'penulis': 'Elmasri', 'warna': Colors.teal},
-    ];
-
     return DefaultTabController(
-      length: 2,
+      length: 4,
       child: Scaffold(
         backgroundColor: const Color(0xFFF4F6F5),
         appBar: AppBar(
-          title: const Text('Peminjaman Digital 📚'),
+          title: const Text('Peminjaman Digital 📚',  style: TextStyle( color: Colors.white,),),
+          
           backgroundColor: const Color(0xFF2E7D32),
+          leading: IconButton(
+            icon: const Icon(Icons.home), // ✅ tombol Home di kiri
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const HomeScreen()),
+              );
+            },
+          ),
           bottom: const TabBar(
             indicatorColor: Colors.white,
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white70,
             tabs: [
+              Tab(icon: Icon(Icons.pending_actions), text: 'Proses'),
               Tab(icon: Icon(Icons.book), text: 'Aktif'),
-              Tab(icon: Icon(Icons.history), text: 'Riwayat'),
+              Tab(icon: Icon(Icons.subscriptions), text: 'Berlangganan'),
+              Tab(icon: Icon(Icons.history), text: 'History'),
             ],
           ),
         ),
-        body: TabBarView(
-          children: [
-            // === Halaman Peminjaman Aktif (Grid) ===
-            _buildGrid(peminjamanAktif, isHistory: false),
-            // === Halaman Riwayat Peminjaman (Grid) ===
-            _buildGrid(riwayatPeminjaman, isHistory: true),
-          ],
-        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : TabBarView(
+                children: [
+                  _buildGrid(proses, status: 'Proses'),
+                  _buildGrid(aktif, status: 'Aktif'),
+                  _buildGrid(berlangganan, status: 'Berlangganan'),
+                  _buildGrid(history, status: 'History'),
+                ],
+              ),
       ),
     );
   }
 
-  /// Widget grid untuk menampilkan data
-  Widget _buildGrid(List<Map<String, dynamic>> data, {required bool isHistory}) {
+  Widget _buildGrid(List<Map<String, dynamic>> data, {required String status}) {
     if (data.isEmpty) {
       return Center(
         child: Text(
-          isHistory ? 'Belum ada riwayat peminjaman' : 'Tidak ada peminjaman aktif',
+          'Belum ada data $status',
           style: const TextStyle(fontSize: 16, color: Colors.grey),
         ),
       );
@@ -63,38 +136,69 @@ class PeminjamanScreen extends StatelessWidget {
       child: GridView.builder(
         itemCount: data.length,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2, // jumlah kolom
+          crossAxisCount: 2,
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
-          childAspectRatio: 0.7, // perbandingan lebar : tinggi
+          childAspectRatio: 0.75,
         ),
         itemBuilder: (context, index) {
           final item = data[index];
-          return _buildBookCard(item, isHistory: isHistory);
+          final book = item['books'];
+          return _buildBookCard(
+            book['judul'],
+            book['penulis'],
+            status,
+            item['id'],
+            item['harga'],
+          );
         },
       ),
     );
   }
 
-  /// Widget kartu buku
-  Widget _buildBookCard(Map<String, dynamic> item, {required bool isHistory}) {
+  Widget _buildBookCard(
+      String judul, String penulis, String status, String peminjamanId, dynamic harga) {
+    final String hargaStr = (harga == null || harga.toString().isEmpty)
+        ? "Rp -"
+        : harga.toString();
+
+    Color statusColor;
+    IconData statusIcon;
+
+    switch (status) {
+      case 'Proses':
+        statusColor = Colors.orange;
+        statusIcon = Icons.pending_actions;
+        break;
+      case 'Aktif':
+        statusColor = Colors.green;
+        statusIcon = Icons.book;
+        break;
+      case 'Berlangganan':
+        statusColor = Colors.blue;
+        statusIcon = Icons.subscriptions;
+        break;
+      default:
+        statusColor = Colors.grey;
+        statusIcon = Icons.history;
+    }
+
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 3,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Sampul buku
           Container(
             height: 120,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: item['warna'] as Color,
+              color: statusColor,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
             ),
             child: Center(
               child: Text(
-                (item['judul'] as String).split(' ').map((w) => w[0]).join(),
+                judul.split(' ').map((w) => w[0]).join(),
                 style: const TextStyle(
                   fontSize: 24,
                   color: Colors.white,
@@ -103,43 +207,58 @@ class PeminjamanScreen extends StatelessWidget {
               ),
             ),
           ),
-          // Detail buku
           Padding(
             padding: const EdgeInsets.all(10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  item['judul'] as String,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                Text(judul,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 14),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 4),
-                Text(
-                  item['penulis'] as String,
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
-                ),
+                Text(penulis,
+                    style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                const SizedBox(height: 4),
+                Text("Harga: $hargaStr",
+                    style: const TextStyle(color: Colors.red)),
                 const SizedBox(height: 10),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Icon(
-                      isHistory ? Icons.check_circle : Icons.access_time,
-                      color: isHistory ? Colors.green : Colors.orange,
-                      size: 18,
+                    Row(
+                      children: [
+                        Icon(statusIcon, color: statusColor, size: 18),
+                        const SizedBox(width: 4),
+                        Text(
+                          status,
+                          style: TextStyle(fontSize: 12, color: statusColor),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      isHistory ? 'Dikembalikan' : 'Dipinjam',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isHistory ? Colors.green : Colors.orange,
+                    if (status == 'Proses')
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => BankPage(
+                                bankName: "BCA",
+                                peminjamanId: peminjamanId,
+                                harga: hargaStr,
+                              ),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          textStyle: const TextStyle(fontSize: 12),
+                        ),
+                        child: const Text("Bayar"),
                       ),
-                    ),
                   ],
                 ),
               ],

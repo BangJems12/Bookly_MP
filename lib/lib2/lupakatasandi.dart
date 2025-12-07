@@ -14,6 +14,20 @@ class _LupaPasswordScreenState extends State<LupaPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text("Lupa Kata Sandi"),
+        centerTitle: true,
+        automaticallyImplyLeading: true, // ✅ tombol back otomatis di AppBar
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF2E7D32), Color(0xFF66BB6A)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+      ),
       body: Container(
         // ✅ Background gradient sama dengan Login & Register
         decoration: const BoxDecoration(
@@ -131,22 +145,21 @@ class _LupaPasswordScreenState extends State<LupaPasswordScreen> {
                         ),
                         const SizedBox(height: 20),
 
-                        // ✅ Link kembali ke login
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text("Ingat kata sandi? "),
-                            GestureDetector(
-                              onTap: () => Navigator.pushNamed(context, "/login"),
-                              child: const Text(
-                                "Kembali ke Login",
-                                style: TextStyle(
-                                  color: Color(0xFF2E7D32),
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
+                        // ✅ Tombol kembali manual
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context); // kembali ke halaman sebelumnya
+                          },
+                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          label: const Text(
+                            "Kembali",
+                            style: TextStyle(color: Colors.white, fontSize: 18),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2E7D32),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            minimumSize: const Size(double.infinity, 55),
+                          ),
                         ),
                       ],
                     ),

@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'lib2/HomeScreen.dart';
 import 'lib2/LoginScreen.dart';
 import 'lib2/RegisterScreen.dart';
 import 'lib2/LupaPasswordScreen.dart';
-import 'lib2/ProfileScreen.dart'; 
+import 'lib2/ProfileScreen.dart';
 import 'lib2/CatalogScreen.dart';
-import 'lib2/Pembayaran.dart'; // <-- import Pembayaran
 import 'lib2/PeminjamanScreen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url: 'https://seyiwzagcxhlujayekru.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNleWl3emFnY3hobHVqYXlla3J1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzODQxMTMsImV4cCI6MjA3ODk2MDExM30._LWPT8401HB4UlRJyz-CMpk6wjyJjT5WUA8UUHEhm6s',
+  );
+
   runApp(const MyApp());
 }
 
@@ -32,7 +40,7 @@ class MyApp extends StatelessWidget {
         "/profile": (context) => const ProfileScreen(),
         "/home": (context) => const HomeScreen(),
         "/catalog": (context) => const CatalogScreen(),
-        "/pembayaran": (context) => const Pembayaran(), // <-- route pembayaran
+        // "/pembayaran": (context) => const Pembayaran(),
         "/peminjaman": (context) => const PeminjamanScreen(),
       },
     );
