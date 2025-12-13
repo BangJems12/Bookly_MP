@@ -29,7 +29,9 @@ class BookDetailScreen extends StatelessWidget {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Buku "${book.judul}" masuk ke proses pembayaran!')),
+        SnackBar(
+          content: Text('Buku "${book.judul}" masuk ke proses pembayaran!'),
+        ),
       );
 
       Navigator.push(
@@ -37,9 +39,9 @@ class BookDetailScreen extends StatelessWidget {
         MaterialPageRoute(builder: (_) => const PeminjamanScreen()),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Gagal memproses peminjaman: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Gagal memproses peminjaman: $e")));
     }
   }
 
@@ -80,34 +82,49 @@ class BookDetailScreen extends StatelessWidget {
           // Info Card
           Card(
             elevation: 4,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(book.judul,
-                      style: const TextStyle(
-                          fontSize: 24, fontWeight: FontWeight.bold)),
+                  Text(
+                    book.judul,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 6),
-                  Text('by ${book.penulis}',
-                      style: const TextStyle(fontSize: 18, color: Colors.grey)),
+                  Text(
+                    'by ${book.penulis}',
+                    style: const TextStyle(fontSize: 18, color: Colors.grey),
+                  ),
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(price,
-                          style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green)),
+                      const Text(
+                        price,
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                        ),
+                      ),
                       Row(
                         children: const [
                           Icon(Icons.star, color: Colors.orange, size: 22),
                           SizedBox(width: 4),
-                          Text(rating,
-                              style: TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.w500)),
+                          Text(
+                            rating,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -119,9 +136,11 @@ class BookDetailScreen extends StatelessWidget {
           const SizedBox(height: 20),
 
           // Deskripsi
-          Text(description,
-              textAlign: TextAlign.justify,
-              style: const TextStyle(fontSize: 16, height: 1.6)),
+          Text(
+            description,
+            textAlign: TextAlign.justify,
+            style: const TextStyle(fontSize: 16, height: 1.6),
+          ),
           const SizedBox(height: 40),
 
           // ✅ Tombol pembayaran besar
@@ -129,19 +148,20 @@ class BookDetailScreen extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () => _pinjamBuku(context),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 8,
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.black45,
-              ).copyWith(
-                backgroundColor: MaterialStateProperty.resolveWith<Color>(
-                  (states) => Colors.transparent,
-                ),
-              ),
+              style:
+                  ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 8,
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.black45,
+                  ).copyWith(
+                    backgroundColor: WidgetStateProperty.resolveWith<Color>(
+                      (states) => Colors.transparent,
+                    ),
+                  ),
               child: Ink(
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(

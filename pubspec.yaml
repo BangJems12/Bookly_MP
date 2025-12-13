@@ -1,4 +1,4 @@
-name: projekkuliahsemester5
+name: Bookly_MP
 "dart.projectSearchDepth": 3
 
 description: "A new Flutter project."
@@ -31,7 +31,9 @@ environment:
 # versions available, run `flutter pub outdated`.
 dependencies:
   advance_pdf_viewer_fork: ^2.0.0
+  pdfx: ^2.9.2
   cupertino_icons: ^1.0.8
+  http: ^1.6.0
   file_picker: ^10.3.7
   flutter:
     sdk: flutter

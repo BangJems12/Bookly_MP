@@ -57,14 +57,16 @@ class HomeScreen extends StatelessWidget {
                       style: TextStyle(fontSize: 18, color: Colors.white),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2E7D32), // ✅ hijau konsisten
+                      backgroundColor: const Color(
+                        0xFF2E7D32,
+                      ), // ✅ hijau konsisten
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
 
                 // Tombol ke Peminjaman
                 SizedBox(
@@ -80,7 +82,9 @@ class HomeScreen extends StatelessWidget {
                       style: TextStyle(fontSize: 18, color: Colors.white),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2E7D32), // ✅ hijau konsisten
+                      backgroundColor: const Color(
+                        0xFF2E7D32,
+                      ), // ✅ hijau konsisten
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -103,7 +107,9 @@ class HomeScreen extends StatelessWidget {
                       style: TextStyle(fontSize: 18, color: Colors.white),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2E7D32), // ✅ hijau konsisten
+                      backgroundColor: const Color(
+                        0xFF2E7D32,
+                      ), // ✅ hijau konsisten
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),

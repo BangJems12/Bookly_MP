@@ -59,7 +59,7 @@ class AdminScreen extends StatelessWidget {
               title: "Kelola User",
               color: Colors.orange,
               onTap: () {
-                Navigator.pushNamed(context, "/kelolauser");
+                Navigator.pushNamed(context, "/kelola_user");
               },
             ),
           ],
@@ -102,7 +102,7 @@ class AdminScreen extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
-                )
+                ),
               ],
             ),
           ),

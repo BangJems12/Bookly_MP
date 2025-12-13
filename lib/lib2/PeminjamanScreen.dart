@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:projekkuliahsemester5/lib2/HomeScreen.dart';
+import 'package:Bookly_MP/lib2/HomeScreen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'Bank.dart'; // ✅ BankPage
 // ✅ pastikan kamu punya HomeScreen
@@ -68,9 +68,9 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
         history = List<Map<String, dynamic>>.from(historyData);
       });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Gagal memuat data: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Gagal memuat data: $e")));
     } finally {
       setState(() => _isLoading = false);
     }
@@ -83,8 +83,11 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
       child: Scaffold(
         backgroundColor: const Color(0xFFF4F6F5),
         appBar: AppBar(
-          title: const Text('Peminjaman Digital 📚',  style: TextStyle( color: Colors.white,),),
-          
+          title: const Text(
+            'Peminjaman Digital 📚',
+            style: TextStyle(color: Colors.white),
+          ),
+
           backgroundColor: const Color(0xFF2E7D32),
           leading: IconButton(
             icon: const Icon(Icons.home), // ✅ tombol Home di kiri
@@ -157,7 +160,12 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
   }
 
   Widget _buildBookCard(
-      String judul, String penulis, String status, String peminjamanId, dynamic harga) {
+    String judul,
+    String penulis,
+    String status,
+    String peminjamanId,
+    dynamic harga,
+  ) {
     final String hargaStr = (harga == null || harga.toString().isEmpty)
         ? "Rp -"
         : harga.toString();
@@ -194,7 +202,9 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
             width: double.infinity,
             decoration: BoxDecoration(
               color: statusColor,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
             ),
             child: Center(
               child: Text(
@@ -212,17 +222,25 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(judul,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 14),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis),
+                Text(
+                  judul,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 const SizedBox(height: 4),
-                Text(penulis,
-                    style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                Text(
+                  penulis,
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
                 const SizedBox(height: 4),
-                Text("Harga: $hargaStr",
-                    style: const TextStyle(color: Colors.red)),
+                Text(
+                  "Harga: $hargaStr",
+                  style: const TextStyle(color: Colors.red),
+                ),
                 const SizedBox(height: 10),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -254,7 +272,9 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                           textStyle: const TextStyle(fontSize: 12),
                         ),
                         child: const Text("Bayar"),

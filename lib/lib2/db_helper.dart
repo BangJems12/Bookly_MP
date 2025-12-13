@@ -1,11 +1,20 @@
-import 'package:sqflite_common/sqlite_api.dart';       // API umum
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';  // untuk desktop
+// API umum
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:sqflite_common_ffi/sqflite_ffi.dart'; // untuk desktop
 import 'package:path/path.dart';
 
 class DBHelper {
   /// Inisialisasi database
   static Future<Database> initDB() async {
-    // Pastikan databaseFactory sudah di-set di main.dart
+    // NOTE: SQLite via sqflite_common_ffi is only available on desktop (non-web).
+    // Avoid calling `databaseFactory` on web where it is not initialized.
+    if (kIsWeb) {
+      throw UnsupportedError(
+        'Local SQLite is not supported on web. Use Supabase as persistence on web.',
+      );
+    }
+
+    // Pastikan databaseFactory sudah di-set di main.dart (sqfliteFfiInit/databaseFactoryFfi)
     final dbPath = await databaseFactory.getDatabasesPath();
     return await databaseFactory.openDatabase(
       join(dbPath, 'books.db'),
@@ -32,6 +41,12 @@ class DBHelper {
 
   /// Insert buku baru
   static Future<void> insertBook(Map<String, dynamic> data) async {
+    // On web, we don't use local SQLite — skip and rely on Supabase
+    if (kIsWeb) {
+      print('⚠️ insertBook skipped on web (use Supabase for persistence).');
+      return;
+    }
+
     final db = await initDB();
 
     // Validasi id
@@ -53,6 +68,12 @@ class DBHelper {
 
   /// Ambil semua buku
   static Future<List<Map<String, dynamic>>> getBooks() async {
+    if (kIsWeb) {
+      // On web, return empty list — recommend using Supabase to fetch books
+      print('⚠️ getBooks on web: returning empty list. Use Supabase for data.');
+      return <Map<String, dynamic>>[];
+    }
+
     final db = await initDB();
     final result = await db.query('books', orderBy: 'created_at DESC');
     print('📚 Jumlah buku: ${result.length}');
@@ -61,6 +82,11 @@ class DBHelper {
 
   /// Update buku
   static Future<void> updateBook(Map<String, dynamic> data) async {
+    if (kIsWeb) {
+      print('⚠️ updateBook skipped on web. Use Supabase for updates.');
+      return;
+    }
+
     final db = await initDB();
 
     // Update timestamp otomatis
@@ -82,6 +108,11 @@ class DBHelper {
 
   /// Hapus buku
   static Future<void> deleteBook(String id) async {
+    if (kIsWeb) {
+      print('⚠️ deleteBook skipped on web. Use Supabase for deletions.');
+      return;
+    }
+
     final db = await initDB();
     final count = await db.delete('books', where: 'id = ?', whereArgs: [id]);
 
@@ -94,6 +125,11 @@ class DBHelper {
 
   /// Opsional: hapus semua buku
   static Future<void> clearBooks() async {
+    if (kIsWeb) {
+      print('⚠️ clearBooks skipped on web.');
+      return;
+    }
+
     final db = await initDB();
     final count = await db.delete('books');
     print('🗑️ Berhasil hapus semua buku ($count record)');

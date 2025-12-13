@@ -31,14 +31,69 @@ class _KelolaBukuScreenState extends State<KelolaBukuScreen> {
 
     if (confirm == true) {
       try {
-        // ✅ hapus dan ambil data yang dihapus
+        // Check for peminjaman that reference this book
+        final refs = await Supabase.instance.client
+            .from('peminjaman')
+            .select('id')
+            .eq('book_id', id);
+
+        final List? refsList = refs as List?;
+        if (refsList != null && refsList.isNotEmpty) {
+          final count = refsList.length;
+          // Ask the user whether to delete related peminjaman as well
+          final deleteRefs = await showDialog<bool>(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: const Text("Referensi Ditemukan"),
+              content: Text(
+                "Terdapat $count peminjaman yang merujuk buku ini.\nApakah Anda ingin menghapus semua peminjaman terkait lalu menghapus buku?",
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text("Batal"),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text(
+                    "Hapus semua",
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
+              ],
+            ),
+          );
+
+          if (deleteRefs != true) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Penghapusan dibatalkan")),
+            );
+            return;
+          }
+
+          // Delete related peminjaman first
+          try {
+            await Supabase.instance.client
+                .from('peminjaman')
+                .delete()
+                .eq('book_id', id);
+          } catch (e) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Gagal menghapus peminjaman terkait: $e")),
+            );
+            return;
+          }
+        }
+
+        // Now delete the book
         final deleted = await Supabase.instance.client
             .from('books')
             .delete()
             .eq('id', id)
             .select();
 
-        if (deleted.isNotEmpty) {
+        final List? deletedList = deleted as List?;
+        if (deletedList != null && deletedList.isNotEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("Buku \"$judul\" berhasil dihapus")),
           );
@@ -48,9 +103,9 @@ class _KelolaBukuScreenState extends State<KelolaBukuScreen> {
           );
         }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Gagal menghapus: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Gagal menghapus: $e")));
       }
     }
   }
