@@ -23,7 +23,12 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (response.user != null) {
-        Navigator.pushReplacementNamed(context, "/home");
+        // ✅ Logika admin
+        if (response.user!.email == "admin@bookly.com") {
+          Navigator.pushReplacementNamed(context, "/admin");
+        } else {
+          Navigator.pushReplacementNamed(context, "/home");
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Login gagal, periksa email/password")),
@@ -42,7 +47,6 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        // ✅ Background gradient sama dengan Register
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [Color(0xFF2E7D32), Color(0xFF66BB6A)],
@@ -54,7 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Center(
             child: SingleChildScrollView(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600), // ✅ lebar card sama
+                constraints: const BoxConstraints(maxWidth: 600),
                 child: Card(
                   elevation: 8,
                   margin: const EdgeInsets.symmetric(horizontal: 24),
@@ -62,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 48), // ✅ padding sama
+                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 48),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -216,7 +220,41 @@ class _LoginScreenState extends State<LoginScreen> {
                               ],
                             ),
                           ),
-                        )
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // ✅ Tombol Login Admin
+                        SizedBox(
+                          width: double.infinity,
+                          height: 75,
+                          child: OutlinedButton(
+                            onPressed: () {
+                              Navigator.pushNamed(context, "/loginadmin");
+                            },
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Colors.red, width: 2),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.admin_panel_settings, color: Colors.red, size: 24),
+                                SizedBox(width: 10),
+                                Text(
+                                  "Login Admin",
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.red,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
