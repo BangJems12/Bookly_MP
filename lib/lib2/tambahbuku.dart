@@ -125,12 +125,9 @@ class _TambahBukuScreenState extends State<TambahBukuScreen> {
     // Upload file if selected
     if (selectedFile != null) {
       coverUrl = await uploadFile();
-      if (coverUrl == null) {
-        // Upload failed, but continue with manual URL if provided
-        coverUrl = coverController.text.trim().isEmpty
-            ? null
-            : coverController.text.trim();
-      }
+      coverUrl ??= coverController.text.trim().isEmpty
+          ? null
+          : coverController.text.trim();
     } else {
       // Use manual URL
       coverUrl = coverController.text.trim().isEmpty

@@ -120,7 +120,7 @@ class _KelolaUserScreenState extends State<KelolaUserScreen> {
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
-                  ..._users.map((u) => _buildUserTile(u)).toList(),
+                  ..._users.map((u) => _buildUserTile(u)),
                   if (_users.isEmpty)
                     const Padding(
                       padding: EdgeInsets.only(top: 20),

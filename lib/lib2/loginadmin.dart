@@ -26,19 +26,19 @@ class _LoginAdminScreenState extends State<LoginAdminScreen> {
       if (user != null) {
         final userId = user.id;
 
-        // Ambil role dari tabel profiles berdasarkan id user
+        // ✅ Ambil role dari tabel profiles berdasarkan user_id
         final profile = await Supabase.instance.client
             .from('profiles')
             .select('role')
-            .eq('id', userId)
-            .maybeSingle(); // aman, tidak error kalau tidak ada baris
+            .eq('user_id', userId) // gunakan user_id, bukan id
+            .maybeSingle();
 
         if (profile != null && profile['role'] == 'admin') {
           Navigator.pushReplacementNamed(context, "/admin");
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Akun ini bukan admin")),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text("Akun ini bukan admin")));
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -46,9 +46,9 @@ class _LoginAdminScreenState extends State<LoginAdminScreen> {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
     } finally {
       setState(() => isLoading = false);
     }
@@ -77,7 +77,10 @@ class _LoginAdminScreenState extends State<LoginAdminScreen> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 48),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 40,
+                      vertical: 48,
+                    ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -119,7 +122,9 @@ class _LoginAdminScreenState extends State<LoginAdminScreen> {
                             ),
                             suffixIcon: IconButton(
                               icon: Icon(
-                                _passwordVisible ? Icons.visibility : Icons.visibility_off,
+                                _passwordVisible
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
                               ),
                               onPressed: () {
                                 setState(() {
@@ -154,7 +159,7 @@ class _LoginAdminScreenState extends State<LoginAdminScreen> {
                                     ),
                                   ),
                                 ),
-                              )
+                              ),
                       ],
                     ),
                   ),
