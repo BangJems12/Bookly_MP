@@ -3,7 +3,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io';
+import 'package:flutter/services.dart';
 import 'db_helper.dart';
+import 'Book.dart';
+import 'BookDetailScreen.dart';
 
 class TambahBukuScreen extends StatefulWidget {
   const TambahBukuScreen({super.key});
@@ -16,6 +19,7 @@ class _TambahBukuScreenState extends State<TambahBukuScreen> {
   final judulController = TextEditingController();
   final penulisController = TextEditingController();
   final coverController = TextEditingController();
+  final hargaController = TextEditingController();
 
   String? selectedYear;
   String? selectedGenre;
@@ -30,12 +34,13 @@ class _TambahBukuScreenState extends State<TambahBukuScreen> {
     (index) => (2000 + index).toString(),
   ); // 2000–2029
   final List<String> genres = [
-    'Fiksi',
-    'Non-Fiksi',
-    'Sejarah',
     'Teknologi',
-    'Sains',
-    'Biografi',
+    'Fiksi',
+    'Sejarah',
+    'Bisnis',
+    'Gaya Hidup',
+    'Edukasi',
+    'Sastra',
   ];
   final List<String> statuses = ['Tersedia', 'Tidak Tersedia'];
 
@@ -111,12 +116,29 @@ class _TambahBukuScreenState extends State<TambahBukuScreen> {
   Future<void> tambahBuku() async {
     if (judulController.text.trim().isEmpty ||
         penulisController.text.trim().isEmpty ||
+        hargaController.text.trim().isEmpty ||
         selectedYear == null ||
         selectedGenre == null ||
         selectedStatus == null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Semua field wajib diisi")));
+      return;
+    }
+
+    // parse harga (allow comma as decimal separator)
+    final hargaText = hargaController.text.trim().replaceAll(',', '.');
+    final hargaVal = double.tryParse(hargaText);
+    if (hargaVal == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Harga tidak valid')));
+      return;
+    }
+    if (hargaVal < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Harga harus bernilai 0 atau lebih')),
+      );
       return;
     }
 
@@ -142,6 +164,7 @@ class _TambahBukuScreenState extends State<TambahBukuScreen> {
       'genre': selectedGenre,
       'status': selectedStatus, // status = Tersedia / Tidak Tersedia
       'cover_url': coverUrl,
+      'harga': hargaVal,
     };
 
     try {
@@ -155,19 +178,49 @@ class _TambahBukuScreenState extends State<TambahBukuScreen> {
       // Use the response data (which includes the generated ID) for SQLite
       await DBHelper.insertBook(response);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Buku berhasil ditambahkan")),
-      );
+      // Navigate to detail page of the newly added book so user sees the inputted harga
+      try {
+        final Map<String, dynamic> inserted = Map<String, dynamic>.from(
+          response as Map,
+        );
+        final Book newBook = Book.fromJson(inserted);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Buku berhasil ditambahkan")),
+        );
 
-      judulController.clear();
-      penulisController.clear();
-      coverController.clear();
-      setState(() {
-        selectedYear = null;
-        selectedGenre = null;
-        selectedStatus = null;
-        selectedFile = null;
-      });
+        // Clear form
+        judulController.clear();
+        penulisController.clear();
+        hargaController.clear();
+        coverController.clear();
+        setState(() {
+          selectedYear = null;
+          selectedGenre = null;
+          selectedStatus = null;
+          selectedFile = null;
+        });
+
+        // Push detail screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => BookDetailScreen(book: newBook)),
+        );
+      } catch (e) {
+        // Fallback if casting/navigation fails: still show success and clear form
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Buku berhasil ditambahkan")),
+        );
+        judulController.clear();
+        penulisController.clear();
+        hargaController.clear();
+        coverController.clear();
+        setState(() {
+          selectedYear = null;
+          selectedGenre = null;
+          selectedStatus = null;
+          selectedFile = null;
+        });
+      }
     } catch (e) {
       ScaffoldMessenger.of(
         context,
@@ -179,75 +232,163 @@ class _TambahBukuScreenState extends State<TambahBukuScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Tambah Buku")),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            TextField(
-              controller: judulController,
-              decoration: const InputDecoration(labelText: "Judul"),
-            ),
-            TextField(
-              controller: penulisController,
-              decoration: const InputDecoration(labelText: "Penulis"),
-            ),
-            DropdownButtonFormField<String>(
-              initialValue: selectedYear,
-              items: years
-                  .map(
-                    (year) => DropdownMenuItem(value: year, child: Text(year)),
-                  )
-                  .toList(),
-              onChanged: (val) => setState(() => selectedYear = val),
-              decoration: const InputDecoration(labelText: "Tahun Terbit"),
-            ),
-            DropdownButtonFormField<String>(
-              initialValue: selectedGenre,
-              items: genres
-                  .map((g) => DropdownMenuItem(value: g, child: Text(g)))
-                  .toList(),
-              onChanged: (val) => setState(() => selectedGenre = val),
-              decoration: const InputDecoration(labelText: "Genre"),
-            ),
-            DropdownButtonFormField<String>(
-              initialValue: selectedStatus,
-              items: statuses
-                  .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                  .toList(),
-              onChanged: (val) => setState(() => selectedStatus = val),
-              decoration: const InputDecoration(labelText: "Status"),
-            ),
-            TextField(
-              controller: coverController,
-              decoration: const InputDecoration(
-                labelText: "Cover URL (opsional)",
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: pickFile,
-                    icon: const Icon(Icons.file_upload),
-                    label: const Text("Pilih File Cover"),
-                  ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Tambah Buku',
+                      style: Theme.of(context).textTheme.titleLarge,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: judulController,
+                      decoration: const InputDecoration(
+                        labelText: 'Judul',
+                        prefixIcon: Icon(Icons.book_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: penulisController,
+                      decoration: const InputDecoration(
+                        labelText: 'Penulis',
+                        prefixIcon: Icon(Icons.person_outline),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            initialValue: selectedYear,
+                            items: years
+                                .map(
+                                  (y) => DropdownMenuItem(
+                                    value: y,
+                                    child: Text(y),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (v) => setState(() => selectedYear = v),
+                            decoration: const InputDecoration(
+                              labelText: 'Tahun',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            initialValue: selectedGenre,
+                            items: genres
+                                .map(
+                                  (g) => DropdownMenuItem(
+                                    value: g,
+                                    child: Text(g),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (v) => setState(() => selectedGenre = v),
+                            decoration: const InputDecoration(
+                              labelText: 'Genre',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      initialValue: selectedStatus,
+                      items: statuses
+                          .map(
+                            (s) => DropdownMenuItem(value: s, child: Text(s)),
+                          )
+                          .toList(),
+                      onChanged: (v) => setState(() => selectedStatus = v),
+                      decoration: const InputDecoration(labelText: 'Status'),
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: coverController,
+                      decoration: const InputDecoration(
+                        labelText: 'Cover URL (opsional)',
+                        prefixIcon: Icon(Icons.image_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: hargaController,
+                      decoration: const InputDecoration(
+                        labelText: 'Harga (mis. 25000)',
+                        prefixIcon: Icon(Icons.attach_money_outlined),
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9\,\.]')),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: pickFile,
+                          icon: const Icon(Icons.file_upload),
+                          label: const Text('Pilih Cover'),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: isUploading
+                              ? const Center(child: CircularProgressIndicator())
+                              : ElevatedButton(
+                                  onPressed: tambahBuku,
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  child: const Text('Simpan Buku'),
+                                ),
+                        ),
+                      ],
+                    ),
+                    if (selectedFile != null) ...[
+                      const SizedBox(height: 12),
+                      Center(
+                        child: Column(
+                          children: [
+                            Image.memory(
+                              selectedFile!.bytes ?? Uint8List(0),
+                              height: 120,
+                              fit: BoxFit.cover,
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              selectedFile!.name,
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-              ],
-            ),
-            if (selectedFile != null) ...[
-              const SizedBox(height: 10),
-              Text("File dipilih: ${selectedFile!.name}"),
-              Text(
-                "Ukuran: ${(selectedFile!.size / 1024).toStringAsFixed(2)} KB",
               ),
-            ],
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: isUploading ? null : tambahBuku,
-              child: isUploading
-                  ? const CircularProgressIndicator()
-                  : const Text("Simpan"),
             ),
           ],
         ),

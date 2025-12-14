@@ -23,13 +23,27 @@ class _CatalogScreenState extends State<CatalogScreen> {
     'Bisnis',
     'Gaya Hidup',
     'Edukasi',
-    'Sastra'
+    'Sastra',
   ];
 
   @override
   void initState() {
     super.initState();
     _loadBooks();
+  }
+
+  String _formatPrice(double? p) {
+    if (p == null) return '';
+    final intPart = p.truncate();
+    final frac = ((p - intPart).abs() * 100).round();
+    String intStr = intPart.toString();
+    intStr = intStr.replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (m) => '.',
+    );
+    if (frac == 0) return 'Rp $intStr';
+    final fracStr = frac.toString().padLeft(2, '0');
+    return 'Rp $intStr,$fracStr';
   }
 
   Future<void> _loadBooks() async {
@@ -45,13 +59,14 @@ class _CatalogScreenState extends State<CatalogScreen> {
       final List<dynamic> response = await queryBuilder;
 
       setState(() {
-        _books =
-            response.map((e) => Book.fromJson(e as Map<String, dynamic>)).toList();
+        _books = response
+            .map((e) => Book.fromJson(e as Map<String, dynamic>))
+            .toList();
       });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Gagal memuat data: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Gagal memuat data: $e")));
     } finally {
       setState(() => _isLoading = false);
     }
@@ -68,7 +83,10 @@ class _CatalogScreenState extends State<CatalogScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Katalog Bookly 📚",  style: TextStyle( color: Colors.white,),),
+        title: const Text(
+          "Katalog Bookly 📚",
+          style: TextStyle(color: Colors.white),
+        ),
         centerTitle: true,
         flexibleSpace: Container(
           decoration: const BoxDecoration(
@@ -98,8 +116,9 @@ class _CatalogScreenState extends State<CatalogScreen> {
                     genre,
                     style: TextStyle(
                       color: isSelected ? Colors.white : Colors.black,
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                     ),
                   ),
                   selected: isSelected,
@@ -118,94 +137,108 @@ class _CatalogScreenState extends State<CatalogScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _books.isEmpty
-                    ? Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Icon(Icons.menu_book, size: 80, color: Colors.grey),
-                          SizedBox(height: 12),
-                          Text("Tidak ada buku yang ditemukan",
-                              style:
-                                  TextStyle(fontSize: 16, color: Colors.grey)),
-                        ],
-                      )
-                    : GridView.builder(
-                        padding: const EdgeInsets.all(12.0),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
+                ? Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(Icons.menu_book, size: 80, color: Colors.grey),
+                      SizedBox(height: 12),
+                      Text(
+                        "Tidak ada buku yang ditemukan",
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
+                    ],
+                  )
+                : GridView.builder(
+                    padding: const EdgeInsets.all(12.0),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 3, // ✅ tiga kolom
                           crossAxisSpacing: 10.0,
                           mainAxisSpacing: 10.0,
                           childAspectRatio: 0.8,
                         ),
-                        itemCount: _books.length,
-                        itemBuilder: (context, index) {
-                          final book = _books[index];
+                    itemCount: _books.length,
+                    itemBuilder: (context, index) {
+                      final book = _books[index];
 
-                          return InkWell(
-                            borderRadius: BorderRadius.circular(10),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => BookDetailScreen(book: book),
-                                ),
-                              );
-                            },
-                            child: Card(
-                              elevation: 3,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  // ✅ Cover dari Supabase
-                                  Expanded(
-                                    child: ClipRRect(
-                                      borderRadius: const BorderRadius.vertical(
-                                          top: Radius.circular(10)),
-                                      child: book.coverUrl != null &&
-                                              book.coverUrl!.isNotEmpty
-                                          ? Image.network(
-                                              book.coverUrl!,
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (_, __, ___) =>
-                                                  _fallbackCover(book),
-                                            )
-                                          : _fallbackCover(book),
-                                    ),
-                                  ),
-                                  // Info
-                                  Padding(
-                                    padding: const EdgeInsets.all(6.0),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          book.judul,
-                                          style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 12),
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          book.penulis,
-                                          style: TextStyle(
-                                              color: Colors.grey.shade600,
-                                              fontSize: 11),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
+                      return InkWell(
+                        borderRadius: BorderRadius.circular(10),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => BookDetailScreen(book: book),
                             ),
                           );
                         },
-                      ),
+                        child: Card(
+                          elevation: 3,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // ✅ Cover dari Supabase
+                              Expanded(
+                                child: ClipRRect(
+                                  borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(10),
+                                  ),
+                                  child:
+                                      book.coverUrl != null &&
+                                          book.coverUrl!.isNotEmpty
+                                      ? Image.network(
+                                          book.coverUrl!,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) =>
+                                              _fallbackCover(book),
+                                        )
+                                      : _fallbackCover(book),
+                                ),
+                              ),
+                              // Info
+                              Padding(
+                                padding: const EdgeInsets.all(6.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      book.judul,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      book.penulis,
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    if (book.harga != null)
+                                      Text(
+                                        _formatPrice(book.harga),
+                                        style: TextStyle(
+                                          color: Colors.green.shade800,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),

@@ -141,51 +141,167 @@ class _KelolaBukuScreenState extends State<KelolaBukuScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Kelola Buku")),
+      appBar: AppBar(
+        title: const Text('Kelola Buku'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              showSearch(context: context, delegate: _BookSearchDelegate());
+            },
+          ),
+        ],
+      ),
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: Supabase.instance.client
             .from('books')
             .stream(primaryKey: ['id'])
             .order('created_at'),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
+          if (!snapshot.hasData)
             return const Center(child: CircularProgressIndicator());
-          }
           final bukuList = snapshot.data!;
-          if (bukuList.isEmpty) {
-            return const Center(child: Text("Belum ada buku"));
-          }
+          if (bukuList.isEmpty)
+            return const Center(child: Text('Belum ada buku'));
 
-          return ListView.builder(
-            itemCount: bukuList.length,
-            itemBuilder: (context, index) {
-              final buku = bukuList[index];
-              return Card(
-                child: ListTile(
-                  leading: const Icon(Icons.book),
-                  title: Text(buku['judul']),
-                  subtitle: Text(
-                    "${buku['penulis'] ?? '-'} • ${buku['tahun'] ?? '-'} • ${buku['genre'] ?? '-'}",
+          return Padding(
+            padding: const EdgeInsets.all(12),
+            child: GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.7,
+              ),
+              itemCount: bukuList.length,
+              itemBuilder: (context, index) {
+                final buku = bukuList[index];
+                final cover = buku['cover_url'] as String?;
+                return Card(
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.visibility, color: Colors.blue),
-                        onPressed: () => lihatDetail(buku),
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(10),
+                          ),
+                          child: cover != null && cover.isNotEmpty
+                              ? Image.network(
+                                  cover,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) =>
+                                      _fallbackCover(buku),
+                                )
+                              : _fallbackCover(buku),
+                        ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => hapusBuku(buku['id'], buku['judul']),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              buku['judul'] ?? '-',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              buku['penulis'] ?? '-',
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.visibility,
+                                    color: Colors.blue,
+                                    size: 20,
+                                  ),
+                                  onPressed: () => lihatDetail(buku),
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.delete,
+                                    color: Colors.red,
+                                    size: 20,
+                                  ),
+                                  onPressed: () =>
+                                      hapusBuku(buku['id'], buku['judul']),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           );
         },
       ),
     );
+  }
+
+  Widget _fallbackCover(Map<String, dynamic> buku) {
+    final title = (buku['judul'] ?? '').toString();
+    return Container(
+      color: Colors.green.shade400,
+      child: Center(
+        child: Text(
+          title.isNotEmpty ? title[0] : '?',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BookSearchDelegate extends SearchDelegate<String> {
+  _BookSearchDelegate() : super(searchFieldLabel: 'Cari buku...');
+
+  @override
+  List<Widget>? buildActions(BuildContext context) {
+    return [
+      IconButton(icon: const Icon(Icons.clear), onPressed: () => query = ''),
+    ];
+  }
+
+  @override
+  Widget? buildLeading(BuildContext context) {
+    return IconButton(
+      icon: const Icon(Icons.arrow_back),
+      onPressed: () => close(context, ''),
+    );
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    // basic result: show query text
+    return Center(child: Text('Cari: "$query" — reload halaman untuk filter'));
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    return const Center(child: Text('Ketik untuk mencari buku...'));
   }
 }

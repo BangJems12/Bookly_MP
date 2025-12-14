@@ -19,22 +19,27 @@ class BookDetailScreen extends StatelessWidget {
         return;
       }
 
-      const String price = 'Rp 89.000';
+      final bool isFree = (book.harga == null || (book.harga ?? 0) <= 0);
+      final status = isFree ? 'Aktif' : 'Proses';
 
       await supabase.from('peminjaman').insert({
         'user_id': user.id,
         'book_id': book.id,
-        'status': 'Proses',
-        'harga': price,
+        'status': status,
+        'harga': book.harga,
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Buku "${book.judul}" masuk ke proses pembayaran!'),
+          content: Text(
+            isFree
+                ? 'Berhasil meminjam "${book.judul}" — gratis!'
+                : 'Buku "${book.judul}" masuk ke proses pembayaran!',
+          ),
         ),
       );
 
-      Navigator.push(
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const PeminjamanScreen()),
       );
@@ -47,7 +52,10 @@ class BookDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const String price = 'Rp 89.000';
+    final bool isFree = (book.harga == null || (book.harga ?? 0) <= 0);
+    final String price = book.harga != null
+        ? _formatPrice(book.harga)
+        : 'Gratis';
     const String rating = '4.8';
     final String description =
         'Buku "${book.judul}" membahas topik dengan gaya yang mudah dipahami dan mendalam. '
@@ -148,20 +156,15 @@ class BookDetailScreen extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () => _pinjamBuku(context),
-              style:
-                  ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 8,
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.black45,
-                  ).copyWith(
-                    backgroundColor: WidgetStateProperty.resolveWith<Color>(
-                      (states) => Colors.transparent,
-                    ),
-                  ),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 8,
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.black45,
+              ),
               child: Ink(
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
@@ -174,15 +177,15 @@ class BookDetailScreen extends StatelessWidget {
                 child: Container(
                   height: 60, // ✅ tombol lebih besar
                   alignment: Alignment.center,
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.payment, color: Colors.white, size: 26),
-                      SizedBox(width: 10),
+                      const Icon(Icons.payment, color: Colors.white, size: 26),
+                      const SizedBox(width: 10),
                       Text(
-                        'Proses Pembayaran',
-                        style: TextStyle(
-                          fontSize: 20, // ✅ teks lebih besar
+                        isFree ? 'Pinjam Sekarang' : 'Proses Pembayaran',
+                        style: const TextStyle(
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
@@ -207,4 +210,15 @@ class BookDetailScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+String _formatPrice(double? p) {
+  if (p == null) return '';
+  final intPart = p.truncate();
+  final frac = ((p - intPart).abs() * 100).round();
+  String intStr = intPart.toString();
+  intStr = intStr.replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => '.');
+  if (frac == 0) return 'Rp $intStr';
+  final fracStr = frac.toString().padLeft(2, '0');
+  return 'Rp $intStr,$fracStr';
 }

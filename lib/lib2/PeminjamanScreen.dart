@@ -166,9 +166,27 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
     String peminjamanId,
     dynamic harga,
   ) {
-    final String hargaStr = (harga == null || harga.toString().isEmpty)
-        ? "Rp -"
-        : harga.toString();
+    String hargaStr;
+    if (harga == null || (harga is String && harga.isEmpty)) {
+      hargaStr = 'Rp -';
+    } else if (harga is num) {
+      final double p = harga.toDouble();
+      final int intPart = p.truncate();
+      final int frac = ((p - intPart).abs() * 100).round();
+      String intStr = intPart.toString();
+      intStr = intStr.replaceAllMapped(
+        RegExp(r'\B(?=(\d{3})+(?!\d))'),
+        (m) => '.',
+      );
+      if (frac == 0) {
+        hargaStr = 'Rp $intStr';
+      } else {
+        final String fracStr = frac.toString().padLeft(2, '0');
+        hargaStr = 'Rp $intStr,$fracStr';
+      }
+    } else {
+      hargaStr = harga.toString();
+    }
 
     Color statusColor;
     IconData statusIcon;
@@ -264,7 +282,7 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
                               builder: (_) => BankPage(
                                 bankName: "BCA",
                                 peminjamanId: peminjamanId,
-                                harga: hargaStr,
+                                harga: harga,
                               ),
                             ),
                           );

@@ -8,7 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class BankPage extends StatefulWidget {
   final String bankName;
   final String peminjamanId; // UUID dari tabel peminjaman
-  final String harga; // ✅ harga (text) dikirim dari PeminjamanScreen
+  final num? harga; // harga sebagai numeric (nullable)
 
   const BankPage({
     super.key,
@@ -79,7 +79,7 @@ class _BankPageState extends State<BankPage> {
           .from('Buktitransfer')
           .getPublicUrl(fileName);
 
-      // Insert bukti transfer
+      // Insert bukti transfer (jumlah numeric)
       await supabase.from('bukti_transfer').insert({
         'file_url': fileUrl,
         'user_id': user.id,
@@ -114,7 +114,27 @@ class _BankPageState extends State<BankPage> {
 
   @override
   Widget build(BuildContext context) {
-    final String hargaDisplay = (widget.harga.isEmpty) ? 'Rp -' : widget.harga;
+    String hargaDisplay;
+    if (widget.harga == null) {
+      hargaDisplay = 'Rp -';
+    } else if (widget.harga is num) {
+      final double p = (widget.harga as num).toDouble();
+      final int intPart = p.truncate();
+      final int frac = ((p - intPart).abs() * 100).round();
+      String intStr = intPart.toString();
+      intStr = intStr.replaceAllMapped(
+        RegExp(r'\B(?=(\d{3})+(?!\d))'),
+        (m) => '.',
+      );
+      if (frac == 0) {
+        hargaDisplay = 'Rp $intStr';
+      } else {
+        final String fracStr = frac.toString().padLeft(2, '0');
+        hargaDisplay = 'Rp $intStr,$fracStr';
+      }
+    } else {
+      hargaDisplay = widget.harga.toString();
+    }
 
     return Scaffold(
       appBar: AppBar(
