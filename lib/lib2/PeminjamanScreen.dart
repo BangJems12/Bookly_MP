@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:Bookly_MP/lib2/HomeScreen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'Bank.dart'; // ✅ BankPage
-// ✅ pastikan kamu punya HomeScreen
+import 'Bank.dart';
 
 class PeminjamanScreen extends StatefulWidget {
   const PeminjamanScreen({super.key});
@@ -87,10 +86,9 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
             'Peminjaman Digital 📚',
             style: TextStyle(color: Colors.white),
           ),
-
           backgroundColor: const Color(0xFF2E7D32),
           leading: IconButton(
-            icon: const Icon(Icons.home), // ✅ tombol Home di kiri
+            icon: const Icon(Icons.home),
             onPressed: () {
               Navigator.pushReplacement(
                 context,
@@ -98,6 +96,13 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
               );
             },
           ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _loadData,
+              tooltip: 'Refresh Data',
+            ),
+          ],
           bottom: const TabBar(
             indicatorColor: Colors.white,
             labelColor: Colors.white,
@@ -275,8 +280,7 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
                     ),
                     if (status == 'Proses')
                       ElevatedButton(
-                        onPressed: () {
-                          // Convert harga to num if it's a String
+                        onPressed: () async {
                           num? hargaNum;
                           if (harga is String) {
                             hargaNum = num.tryParse(harga);
@@ -284,16 +288,19 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
                             hargaNum = harga;
                           }
                           
-                          Navigator.push(
+                          final result = await Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => BankPage(
-                                bankName: "BCA",
+                              builder: (_) => _BankSelectionPage(
                                 peminjamanId: peminjamanId,
                                 harga: hargaNum,
                               ),
                             ),
                           );
+                          
+                          if (result == true) {
+                            _loadData();
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
@@ -308,6 +315,131 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
                   ],
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ✅ Class BankSelectionPage dengan underscore prefix (private)
+class _BankSelectionPage extends StatelessWidget {
+  final String peminjamanId;
+  final num? harga;
+
+  const _BankSelectionPage({
+    required this.peminjamanId,
+    required this.harga,
+  });
+
+  final List<Map<String, dynamic>> banks = const [
+    {"name": "BCA", "color": Colors.blue},
+    {"name": "BNI", "color": Colors.orange},
+    {"name": "Mandiri", "color": Colors.yellow},
+    {"name": "BRI", "color": Colors.indigo},
+  ];
+
+  String _formatHarga(num? p) {
+    if (p == null) return 'Rp -';
+    final double val = p.toDouble();
+    final int intPart = val.truncate();
+    final int frac = ((val - intPart).abs() * 100).round();
+    String intStr = intPart.toString();
+    intStr = intStr.replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (m) => '.',
+    );
+    if (frac == 0) return 'Rp $intStr';
+    final String fracStr = frac.toString().padLeft(2, '0');
+    return 'Rp $intStr,$fracStr';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Pilih Bank", style: TextStyle(color: Colors.white)),
+        backgroundColor: const Color(0xFF2E7D32),
+      ),
+      body: Column(
+        children: [
+          Card(
+            color: Colors.teal.shade50,
+            elevation: 4,
+            margin: const EdgeInsets.all(16),
+            child: ListTile(
+              leading: const Icon(Icons.attach_money, color: Colors.teal, size: 32),
+              title: const Text(
+                "Total Pembayaran",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              subtitle: Text(
+                _formatHarga(harga),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red,
+                ),
+              ),
+            ),
+          ),
+          
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: GridView.builder(
+                itemCount: banks.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 16,
+                  childAspectRatio: 1.5,
+                ),
+                itemBuilder: (context, index) {
+                  final bank = banks[index];
+                  return InkWell(
+                    onTap: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => BankPage(
+                            bankName: bank['name'],
+                            peminjamanId: peminjamanId,
+                            harga: harga,
+                          ),
+                        ),
+                      );
+                      if (result == true) {
+                        Navigator.pop(context, true);
+                      }
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: bank['color'],
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 6,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          bank['name'],
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 22,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ],

@@ -7,8 +7,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class BankPage extends StatefulWidget {
   final String bankName;
-  final String peminjamanId; // UUID dari tabel peminjaman
-  final num? harga; // harga sebagai numeric (nullable)
+  final String peminjamanId;
+  final num? harga;
 
   const BankPage({
     super.key,
@@ -31,11 +31,40 @@ class _BankPageState extends State<BankPage> {
     "Simpan bukti transfer.",
   ];
 
-  final String booklyAccountNumber = "010239281233"; // contoh rekening
+  final String booklyAccountNumber = "010239281233";
   final String booklyAccountName = "Perpus Bookly";
 
   XFile? _selectedImage;
   bool _isUploading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkStatus();
+  }
+
+  // ✅ Validasi status peminjaman sebelum upload
+  Future<void> _checkStatus() async {
+    try {
+      final supabase = Supabase.instance.client;
+      final data = await supabase
+          .from('peminjaman')
+          .select('status')
+          .eq('id', widget.peminjamanId)
+          .single();
+
+      if (data['status'] == 'Aktif') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Pembayaran sudah selesai, status sudah Aktif"),
+          ),
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      print('Error checking status: $e');
+    }
+  }
 
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
@@ -48,7 +77,12 @@ class _BankPageState extends State<BankPage> {
   }
 
   Future<void> _uploadImage() async {
-    if (_selectedImage == null) return;
+    if (_selectedImage == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Pilih bukti transfer terlebih dahulu")),
+      );
+      return;
+    }
 
     setState(() => _isUploading = true);
     try {
@@ -58,12 +92,25 @@ class _BankPageState extends State<BankPage> {
       if (user == null || user.id.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
-              "User belum login, tidak bisa upload bukti transfer.",
-            ),
+            content: Text("User belum login, tidak bisa upload bukti transfer."),
           ),
         );
         setState(() => _isUploading = false);
+        return;
+      }
+
+      // ✅ Cek status lagi sebelum upload
+      final statusCheck = await supabase
+          .from('peminjaman')
+          .select('status')
+          .eq('id', widget.peminjamanId)
+          .single();
+
+      if (statusCheck['status'] == 'Aktif') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Pembayaran sudah selesai")),
+        );
+        Navigator.pop(context, true);
         return;
       }
 
@@ -79,7 +126,7 @@ class _BankPageState extends State<BankPage> {
           .from('Buktitransfer')
           .getPublicUrl(fileName);
 
-      // Insert bukti transfer (jumlah numeric)
+      // Insert bukti transfer
       await supabase.from('bukti_transfer').insert({
         'file_url': fileUrl,
         'user_id': user.id,
@@ -88,7 +135,7 @@ class _BankPageState extends State<BankPage> {
         'jumlah': widget.harga,
       });
 
-      // ✅ Update status peminjaman menjadi 'Aktif' setelah bukti transfer diupload
+      // Update status peminjaman menjadi 'Aktif'
       await supabase
           .from('peminjaman')
           .update({'status': 'Aktif'})
@@ -96,13 +143,13 @@ class _BankPageState extends State<BankPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            "Bukti transfer berhasil diupload & status menjadi Aktif!",
-          ),
+          content: Text("Bukti transfer berhasil diupload & status menjadi Aktif!"),
+          backgroundColor: Colors.green,
         ),
       );
 
-      Navigator.pop(context);
+      // ✅ Kirim signal sukses ke screen sebelumnya
+      Navigator.pop(context, true);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Gagal upload bukti transfer: $e")),
@@ -211,6 +258,9 @@ class _BankPageState extends State<BankPage> {
             onPressed: _pickImage,
             icon: const Icon(Icons.upload_file),
             label: const Text("Pilih Bukti Transfer"),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+            ),
           ),
           const SizedBox(height: 12),
 
@@ -243,9 +293,10 @@ class _BankPageState extends State<BankPage> {
                 ElevatedButton.icon(
                   onPressed: _isUploading ? null : _uploadImage,
                   icon: const Icon(Icons.cloud_upload),
-                  label: Text(_isUploading ? "Mengupload..." : "Upload"),
+                  label: Text(_isUploading ? "Mengupload..." : "Upload & Konfirmasi"),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
                   ),
                 ),
               ],
