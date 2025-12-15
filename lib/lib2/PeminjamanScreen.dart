@@ -13,7 +13,6 @@ class PeminjamanScreen extends StatefulWidget {
 class _PeminjamanScreenState extends State<PeminjamanScreen> {
   List<Map<String, dynamic>> proses = [];
   List<Map<String, dynamic>> aktif = [];
-  List<Map<String, dynamic>> berlangganan = [];
   List<Map<String, dynamic>> history = [];
   bool _isLoading = false;
 
@@ -48,12 +47,6 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
           .eq('user_id', user.id)
           .eq('status', 'Aktif');
 
-      final berlanggananData = await supabase
-          .from('peminjaman')
-          .select('id, status, harga, books(judul, penulis)')
-          .eq('user_id', user.id)
-          .eq('status', 'Berlangganan');
-
       final historyData = await supabase
           .from('peminjaman')
           .select('id, status, harga, books(judul, penulis)')
@@ -63,7 +56,6 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
       setState(() {
         proses = List<Map<String, dynamic>>.from(prosesData);
         aktif = List<Map<String, dynamic>>.from(aktifData);
-        berlangganan = List<Map<String, dynamic>>.from(berlanggananData);
         history = List<Map<String, dynamic>>.from(historyData);
       });
     } catch (e) {
@@ -100,7 +92,6 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
       try {
         final supabase = Supabase.instance.client;
         
-        // Update status menjadi History
         await supabase
             .from('peminjaman')
             .update({'status': 'History'})
@@ -113,7 +104,6 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
           ),
         );
 
-        // Refresh data
         _loadData();
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -126,10 +116,28 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
     }
   }
 
+  // ✅ Hitung jumlah kolom berdasarkan lebar layar
+  int _getCrossAxisCount(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width >= 1200) return 4; // Desktop besar
+    if (width >= 800) return 3;  // Tablet landscape
+    if (width >= 600) return 2;  // Tablet portrait
+    return 1;                     // Mobile
+  }
+
+  // ✅ Hitung aspect ratio berdasarkan lebar layar
+  double _getChildAspectRatio(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width >= 1200) return 0.8;  // Desktop
+    if (width >= 800) return 0.75;  // Tablet landscape
+    if (width >= 600) return 0.7;   // Tablet portrait
+    return 0.85;                     // Mobile (lebih tinggi)
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 4,
+      length: 3, // ✅ Ubah jadi 3 tab
       child: Scaffold(
         backgroundColor: const Color(0xFFF4F6F5),
         appBar: AppBar(
@@ -158,10 +166,10 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
             indicatorColor: Colors.white,
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white70,
+            isScrollable: true,
             tabs: [
               Tab(icon: Icon(Icons.pending_actions), text: 'Proses'),
               Tab(icon: Icon(Icons.book), text: 'Aktif'),
-              Tab(icon: Icon(Icons.subscriptions), text: 'Berlangganan'),
               Tab(icon: Icon(Icons.history), text: 'History'),
             ],
           ),
@@ -172,7 +180,6 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
                 children: [
                   _buildGrid(proses, status: 'Proses'),
                   _buildGrid(aktif, status: 'Aktif'),
-                  _buildGrid(berlangganan, status: 'Berlangganan'),
                   _buildGrid(history, status: 'History'),
                 ],
               ),
@@ -190,15 +197,18 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
       );
     }
 
+    // ✅ Responsive padding
+    final padding = MediaQuery.of(context).size.width >= 600 ? 16.0 : 12.0;
+
     return Padding(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(padding),
       child: GridView.builder(
         itemCount: data.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 0.75,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: _getCrossAxisCount(context), // ✅ Dinamis
+          crossAxisSpacing: padding,
+          mainAxisSpacing: padding,
+          childAspectRatio: _getChildAspectRatio(context), // ✅ Dinamis
         ),
         itemBuilder: (context, index) {
           final item = data[index];
@@ -222,6 +232,8 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
     String peminjamanId,
     dynamic harga,
   ) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+
     String hargaStr;
     if (harga == null || (harga is String && harga.isEmpty)) {
       hargaStr = 'Rp -';
@@ -256,10 +268,6 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
         statusColor = Colors.green;
         statusIcon = Icons.book;
         break;
-      case 'Berlangganan':
-        statusColor = Colors.blue;
-        statusIcon = Icons.subscriptions;
-        break;
       default:
         statusColor = Colors.grey;
         statusIcon = Icons.history;
@@ -271,8 +279,9 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ✅ Header dengan tinggi responsif
           Container(
-            height: 120,
+            height: isMobile ? 100 : 120,
             width: double.infinity,
             decoration: BoxDecoration(
               color: statusColor,
@@ -282,105 +291,120 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
             ),
             child: Center(
               child: Text(
-                judul.split(' ').map((w) => w[0]).join(),
-                style: const TextStyle(
-                  fontSize: 24,
+                judul.split(' ').map((w) => w.isNotEmpty ? w[0] : '').join(),
+                style: TextStyle(
+                  fontSize: isMobile ? 20 : 24,
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  judul,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.all(isMobile ? 8.0 : 10.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        judul,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: isMobile ? 12 : 14,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        penulis,
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: isMobile ? 11 : 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Harga: $hargaStr",
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontSize: isMobile ? 11 : 12,
+                        ),
+                      ),
+                    ],
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  penulis,
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  "Harga: $hargaStr",
-                  style: const TextStyle(color: Colors.red),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(statusIcon, color: statusColor, size: 18),
-                        const SizedBox(width: 4),
-                        Text(
-                          status,
-                          style: TextStyle(fontSize: 12, color: statusColor),
-                        ),
-                      ],
-                    ),
-                    // ✅ Tombol Bayar untuk status Proses
-                    if (status == 'Proses')
-                      ElevatedButton(
-                        onPressed: () async {
-                          num? hargaNum;
-                          if (harga is String) {
-                            hargaNum = num.tryParse(harga);
-                          } else if (harga is num) {
-                            hargaNum = harga;
-                          }
-                          
-                          final result = await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => _BankSelectionPage(
-                                peminjamanId: peminjamanId,
-                                harga: hargaNum,
+                  // ✅ Footer responsif
+                  Column(
+                    children: [
+                      Row(
+                        children: [
+                          Icon(statusIcon, color: statusColor, size: isMobile ? 16 : 18),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              status,
+                              style: TextStyle(
+                                fontSize: isMobile ? 11 : 12,
+                                color: statusColor,
                               ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          );
-                          
-                          if (result == true) {
-                            _loadData();
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
                           ),
-                          textStyle: const TextStyle(fontSize: 12),
-                        ),
-                        child: const Text("Bayar"),
+                        ],
                       ),
-                    // ✅ Tombol Selesai untuk status Aktif
-                    if (status == 'Aktif')
-                      ElevatedButton(
-                        onPressed: () => _selesaikanPeminjaman(peminjamanId, judul),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
+                      const SizedBox(height: 8),
+                      // ✅ Tombol full width di mobile
+                      if (status == 'Proses' || status == 'Aktif')
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              if (status == 'Proses') {
+                                num? hargaNum;
+                                if (harga is String) {
+                                  hargaNum = num.tryParse(harga);
+                                } else if (harga is num) {
+                                  hargaNum = harga;
+                                }
+                                
+                                final result = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => _BankSelectionPage(
+                                      peminjamanId: peminjamanId,
+                                      harga: hargaNum,
+                                    ),
+                                  ),
+                                );
+                                
+                                if (result == true) {
+                                  _loadData();
+                                }
+                              } else if (status == 'Aktif') {
+                                _selesaikanPeminjaman(peminjamanId, judul);
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: status == 'Proses' ? Colors.green : Colors.blue,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isMobile ? 8 : 12,
+                                vertical: isMobile ? 6 : 8,
+                              ),
+                              textStyle: TextStyle(fontSize: isMobile ? 11 : 12),
+                            ),
+                            child: Text(status == 'Proses' ? "Bayar" : "Selesai"),
                           ),
-                          textStyle: const TextStyle(fontSize: 12),
                         ),
-                        child: const Text("Selesai"),
-                      ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -389,7 +413,7 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
   }
 }
 
-// ✅ Class BankSelectionPage dengan underscore prefix (private)
+// ✅ Responsive Bank Selection Page
 class _BankSelectionPage extends StatelessWidget {
   final String peminjamanId;
   final num? harga;
@@ -421,8 +445,19 @@ class _BankSelectionPage extends StatelessWidget {
     return 'Rp $intStr,$fracStr';
   }
 
+  // ✅ Hitung crossAxisCount responsif
+  int _getCrossAxisCount(double width) {
+    if (width >= 1200) return 4;
+    if (width >= 800) return 3;
+    if (width >= 600) return 2;
+    return 2; // Mobile tetap 2 kolom
+  }
+
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Pilih Bank", style: TextStyle(color: Colors.white)),
@@ -430,20 +465,28 @@ class _BankSelectionPage extends StatelessWidget {
       ),
       body: Column(
         children: [
+          // ✅ Card harga responsif
           Card(
             color: Colors.teal.shade50,
             elevation: 4,
-            margin: const EdgeInsets.all(16),
+            margin: EdgeInsets.all(isMobile ? 12 : 16),
             child: ListTile(
-              leading: const Icon(Icons.attach_money, color: Colors.teal, size: 32),
-              title: const Text(
+              leading: Icon(
+                Icons.attach_money,
+                color: Colors.teal,
+                size: isMobile ? 28 : 32,
+              ),
+              title: Text(
                 "Total Pembayaran",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: isMobile ? 14 : 16,
+                ),
               ),
               subtitle: Text(
                 _formatHarga(harga),
-                style: const TextStyle(
-                  fontSize: 20,
+                style: TextStyle(
+                  fontSize: isMobile ? 18 : 20,
                   fontWeight: FontWeight.bold,
                   color: Colors.red,
                 ),
@@ -451,16 +494,17 @@ class _BankSelectionPage extends StatelessWidget {
             ),
           ),
           
+          // ✅ Grid bank responsif
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(isMobile ? 12 : 16),
               child: GridView.builder(
                 itemCount: banks.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  childAspectRatio: 1.5,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: _getCrossAxisCount(screenWidth),
+                  mainAxisSpacing: isMobile ? 12 : 16,
+                  crossAxisSpacing: isMobile ? 12 : 16,
+                  childAspectRatio: isMobile ? 1.3 : 1.5,
                 ),
                 itemBuilder: (context, index) {
                   final bank = banks[index];
@@ -495,10 +539,10 @@ class _BankSelectionPage extends StatelessWidget {
                       child: Center(
                         child: Text(
                           bank['name'],
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
-                            fontSize: 22,
+                            fontSize: isMobile ? 18 : 22,
                           ),
                         ),
                       ),
