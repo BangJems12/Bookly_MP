@@ -114,12 +114,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const SizedBox(height: 8),
                         SettingRow(
-                          icon: Icons.notifications,
-                          label: "Atur Notifikasi",
-                          onTap: () {},
-                        ),
-                        const Divider(),
-                        SettingRow(
                           icon: Icons.lock,
                           label: "Ubah Kata Sandi",
                           onTap: () {
