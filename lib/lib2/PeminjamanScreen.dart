@@ -75,6 +75,57 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
     }
   }
 
+  // ✅ Fungsi untuk menyelesaikan peminjaman
+  Future<void> _selesaikanPeminjaman(String peminjamanId, String judul) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Selesaikan Peminjaman"),
+        content: Text('Apakah Anda yakin ingin menyelesaikan peminjaman buku "$judul"?\n\nBuku akan dipindahkan ke History.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Batal"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+            child: const Text("Ya, Selesaikan"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        final supabase = Supabase.instance.client;
+        
+        // Update status menjadi History
+        await supabase
+            .from('peminjaman')
+            .update({'status': 'History'})
+            .eq('id', peminjamanId);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Peminjaman "$judul" telah diselesaikan'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Refresh data
+        _loadData();
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Gagal menyelesaikan peminjaman: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -278,6 +329,7 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
                         ),
                       ],
                     ),
+                    // ✅ Tombol Bayar untuk status Proses
                     if (status == 'Proses')
                       ElevatedButton(
                         onPressed: () async {
@@ -311,6 +363,20 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
                           textStyle: const TextStyle(fontSize: 12),
                         ),
                         child: const Text("Bayar"),
+                      ),
+                    // ✅ Tombol Selesai untuk status Aktif
+                    if (status == 'Aktif')
+                      ElevatedButton(
+                        onPressed: () => _selesaikanPeminjaman(peminjamanId, judul),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          textStyle: const TextStyle(fontSize: 12),
+                        ),
+                        child: const Text("Selesai"),
                       ),
                   ],
                 ),
