@@ -276,13 +276,21 @@ class _PeminjamanScreenState extends State<PeminjamanScreen> {
                     if (status == 'Proses')
                       ElevatedButton(
                         onPressed: () {
+                          // Convert harga to num if it's a String
+                          num? hargaNum;
+                          if (harga is String) {
+                            hargaNum = num.tryParse(harga);
+                          } else if (harga is num) {
+                            hargaNum = harga;
+                          }
+                          
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (_) => BankPage(
                                 bankName: "BCA",
                                 peminjamanId: peminjamanId,
-                                harga: harga,
+                                harga: hargaNum,
                               ),
                             ),
                           );
