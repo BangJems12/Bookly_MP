@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'editbuku.dart';
 
 class KelolaBukuScreen extends StatefulWidget {
   const KelolaBukuScreen({super.key});
@@ -232,6 +233,36 @@ class _KelolaBukuScreenState extends State<KelolaBukuScreen> {
                                     size: 20,
                                   ),
                                   onPressed: () => lihatDetail(buku),
+                                  tooltip: 'Lihat Detail',
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.edit,
+                                    color: Colors.orange,
+                                    size: 20,
+                                  ),
+                                  onPressed: () async {
+                                    final result = await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            EditBukuScreen(buku: buku),
+                                      ),
+                                    );
+                                    // Stream will automatically update if result is true
+                                    if (result == true) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Buku berhasil diperbarui',
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  tooltip: 'Edit Buku',
                                 ),
                                 IconButton(
                                   icon: const Icon(
@@ -241,6 +272,7 @@ class _KelolaBukuScreenState extends State<KelolaBukuScreen> {
                                   ),
                                   onPressed: () =>
                                       hapusBuku(buku['id'], buku['judul']),
+                                  tooltip: 'Hapus Buku',
                                 ),
                               ],
                             ),

@@ -4,22 +4,21 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io';
 import 'package:flutter/services.dart';
-import 'db_helper.dart';
-import 'Book.dart';
-import 'BookDetailScreen.dart';
 
-class TambahBukuScreen extends StatefulWidget {
-  const TambahBukuScreen({super.key});
+class EditBukuScreen extends StatefulWidget {
+  final Map<String, dynamic> buku;
+
+  const EditBukuScreen({super.key, required this.buku});
 
   @override
-  State<TambahBukuScreen> createState() => _TambahBukuScreenState();
+  State<EditBukuScreen> createState() => _EditBukuScreenState();
 }
 
-class _TambahBukuScreenState extends State<TambahBukuScreen> {
-  final judulController = TextEditingController();
-  final penulisController = TextEditingController();
-  final coverController = TextEditingController();
-  final hargaController = TextEditingController();
+class _EditBukuScreenState extends State<EditBukuScreen> {
+  late final TextEditingController judulController;
+  late final TextEditingController penulisController;
+  late final TextEditingController coverController;
+  late final TextEditingController hargaController;
 
   String? selectedYear;
   String? selectedGenre;
@@ -45,6 +44,58 @@ class _TambahBukuScreenState extends State<TambahBukuScreen> {
   ];
   final List<String> statuses = ['Tersedia', 'Tidak Tersedia'];
 
+  @override
+  void initState() {
+    super.initState();
+
+    // Initialize controllers with existing book data
+    judulController = TextEditingController(text: widget.buku['judul'] ?? '');
+    penulisController = TextEditingController(
+      text: widget.buku['penulis'] ?? '',
+    );
+    coverController = TextEditingController(
+      text: widget.buku['cover_url'] ?? '',
+    );
+
+    // Handle harga - convert to string
+    final hargaValue = widget.buku['harga'];
+    if (hargaValue != null) {
+      if (hargaValue is num) {
+        hargaController = TextEditingController(text: hargaValue.toString());
+      } else {
+        hargaController = TextEditingController(text: hargaValue.toString());
+      }
+    } else {
+      hargaController = TextEditingController(text: '0');
+    }
+
+    // Set dropdown values - validate they exist in the lists
+    final tahunValue = widget.buku['tahun'];
+    final tahunStr = tahunValue != null ? tahunValue.toString() : null;
+    selectedYear = (tahunStr != null && years.contains(tahunStr))
+        ? tahunStr
+        : null;
+
+    final genreValue = widget.buku['genre'];
+    selectedGenre = (genreValue != null && genres.contains(genreValue))
+        ? genreValue
+        : null;
+
+    final statusValue = widget.buku['status'];
+    selectedStatus = (statusValue != null && statuses.contains(statusValue))
+        ? statusValue
+        : null;
+  }
+
+  @override
+  void dispose() {
+    judulController.dispose();
+    penulisController.dispose();
+    coverController.dispose();
+    hargaController.dispose();
+    super.dispose();
+  }
+
   /// Pick file for cover image
   Future<void> pickFile() async {
     try {
@@ -69,7 +120,7 @@ class _TambahBukuScreenState extends State<TambahBukuScreen> {
   Future<String?> uploadFile() async {
     if (selectedFile == null) return null;
 
-    // Ensure the user is authenticated — storage INSERT policy requires authenticated
+    // Ensure the user is authenticated
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -88,7 +139,7 @@ class _TambahBukuScreenState extends State<TambahBukuScreen> {
       // For web, use bytes; for mobile, use File
       if (kIsWeb) {
         await Supabase.instance.client.storage
-            .from('covers') // upload to original bucket covers
+            .from('covers')
             .uploadBinary(filePath, selectedFile!.bytes!);
       } else {
         final file = File(selectedFile!.path!);
@@ -113,8 +164,8 @@ class _TambahBukuScreenState extends State<TambahBukuScreen> {
     }
   }
 
-  /// Simpan data buku ke Supabase + SQLite
-  Future<void> tambahBuku() async {
+  /// Update data buku ke Supabase
+  Future<void> updateBuku() async {
     if (judulController.text.trim().isEmpty ||
         penulisController.text.trim().isEmpty ||
         hargaController.text.trim().isEmpty ||
@@ -152,7 +203,7 @@ class _TambahBukuScreenState extends State<TambahBukuScreen> {
           ? null
           : coverController.text.trim();
     } else {
-      // Use manual URL
+      // Use manual URL or keep existing
       coverUrl = coverController.text.trim().isEmpty
           ? null
           : coverController.text.trim();
@@ -163,65 +214,24 @@ class _TambahBukuScreenState extends State<TambahBukuScreen> {
       'penulis': penulisController.text.trim(),
       'tahun': int.tryParse(selectedYear!),
       'genre': selectedGenre,
-      'status': selectedStatus, // status = Tersedia / Tidak Tersedia
+      'status': selectedStatus,
       'cover_url': coverUrl,
       'harga': hargaVal,
     };
 
     try {
-      // Insert to Supabase and get the inserted data with ID
-      final response = await Supabase.instance.client
+      // Update to Supabase
+      await Supabase.instance.client
           .from('books')
-          .insert(data)
-          .select()
-          .single();
+          .update(data)
+          .eq('id', widget.buku['id']);
 
-      // Use the response data (which includes the generated ID) for SQLite
-      await DBHelper.insertBook(response);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Buku berhasil diperbarui")));
 
-      // Navigate to detail page of the newly added book so user sees the inputted harga
-      try {
-        final Map<String, dynamic> inserted = Map<String, dynamic>.from(
-          response as Map,
-        );
-        final Book newBook = Book.fromJson(inserted);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Buku berhasil ditambahkan")),
-        );
-
-        // Clear form
-        judulController.clear();
-        penulisController.clear();
-        hargaController.clear();
-        coverController.clear();
-        setState(() {
-          selectedYear = null;
-          selectedGenre = null;
-          selectedStatus = null;
-          selectedFile = null;
-        });
-
-        // Push detail screen
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => BookDetailScreen(book: newBook)),
-        );
-      } catch (e) {
-        // Fallback if casting/navigation fails: still show success and clear form
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Buku berhasil ditambahkan")),
-        );
-        judulController.clear();
-        penulisController.clear();
-        hargaController.clear();
-        coverController.clear();
-        setState(() {
-          selectedYear = null;
-          selectedGenre = null;
-          selectedStatus = null;
-          selectedFile = null;
-        });
-      }
+      // Go back to previous screen
+      Navigator.pop(context, true);
     } catch (e) {
       ScaffoldMessenger.of(
         context,
@@ -232,7 +242,7 @@ class _TambahBukuScreenState extends State<TambahBukuScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Tambah Buku")),
+      appBar: AppBar(title: const Text("Edit Buku")),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -248,7 +258,7 @@ class _TambahBukuScreenState extends State<TambahBukuScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      'Tambah Buku',
+                      'Edit Buku',
                       style: Theme.of(context).textTheme.titleLarge,
                       textAlign: TextAlign.center,
                     ),
@@ -273,7 +283,7 @@ class _TambahBukuScreenState extends State<TambahBukuScreen> {
                       children: [
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                            initialValue: selectedYear,
+                            value: selectedYear,
                             items: years
                                 .map(
                                   (y) => DropdownMenuItem(
@@ -291,7 +301,7 @@ class _TambahBukuScreenState extends State<TambahBukuScreen> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                            initialValue: selectedGenre,
+                            value: selectedGenre,
                             items: genres
                                 .map(
                                   (g) => DropdownMenuItem(
@@ -310,7 +320,7 @@ class _TambahBukuScreenState extends State<TambahBukuScreen> {
                     ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
-                      initialValue: selectedStatus,
+                      value: selectedStatus,
                       items: statuses
                           .map(
                             (s) => DropdownMenuItem(value: s, child: Text(s)),
@@ -354,7 +364,7 @@ class _TambahBukuScreenState extends State<TambahBukuScreen> {
                           child: isUploading
                               ? const Center(child: CircularProgressIndicator())
                               : ElevatedButton(
-                                  onPressed: tambahBuku,
+                                  onPressed: updateBuku,
                                   style: ElevatedButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(
                                       vertical: 14,
@@ -363,7 +373,7 @@ class _TambahBukuScreenState extends State<TambahBukuScreen> {
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                   ),
-                                  child: const Text('Simpan Buku'),
+                                  child: const Text('Update Buku'),
                                 ),
                         ),
                       ],
@@ -382,6 +392,34 @@ class _TambahBukuScreenState extends State<TambahBukuScreen> {
                             Text(
                               selectedFile!.name,
                               style: const TextStyle(fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else if (coverController.text.trim().isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Center(
+                        child: Column(
+                          children: [
+                            Image.network(
+                              coverController.text.trim(),
+                              height: 120,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                height: 120,
+                                width: 80,
+                                color: Colors.green.shade400,
+                                child: const Icon(
+                                  Icons.book,
+                                  color: Colors.white,
+                                  size: 40,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            const Text(
+                              'Current Cover',
+                              style: TextStyle(fontSize: 12),
                             ),
                           ],
                         ),
